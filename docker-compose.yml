@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    image: sonymuhamad/todo-api-service:b463af8014c1a8957a91f661fccbf34f140923f8
+    container_name: api-gateway
+    ports:
+      - "8085:8085"
+    env_file:
+      - .env.api-service
+    depends_on:
+      - auth-service
+      - task-service
+
+  auth-service:
+    image: sonymuhamad/todo-auth-service:4a345f9d848c5214b2dd2591aa1a11b472a1c428
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+      - "9091:9091"
+    env_file:
+      - ./auth-service/.env
+    depends_on:
+      - kafka
+
+  task-service:
+    image: sonymuhamad/todo-task-service:40070f13c1acc3515cde04fe83e2351937c49931
+    container_name: task-service
+    ports:
+      - "8082:8082"
+      - "9092:9092"
+    env_file:
+      - ./task-service/.env
+    depends_on:
+      - kafka
+
+  mailer-service:
+    image: sonymuhamad/todo-mailer-service:68e23a350e7ad92b6e7a47e7312410bfc8848074
+    container_name: mailer-service
+    env_file:
+      - ./mailer-service/.env
+    depends_on:
+      - kafka
+
+  kafka:
+    image: bitnami/kafka:3.5.0
+    container_name: kafka
+    ports:
+      - "9082:9082"
+      - "29092:29092"
+    environment:
+      - KAFKA_BROKER_ID= 1
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://0.0.0.0:9082
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://kafka:9082
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_ENABLE_KRAFT=no  # 👈 Force legacy mode with Zookeeper
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR= 1
+    depends_on:
+      - zookeeper
+      
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
