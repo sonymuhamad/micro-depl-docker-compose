@@ -7,7 +7,7 @@ services:
     ports:
       - "8085:8085"
     env_file:
-      - .env.api-service
+      - ./api-service/.env
     depends_on:
       - auth-service
       - task-service
